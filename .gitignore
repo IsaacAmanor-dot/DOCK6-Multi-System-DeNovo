@@ -1,0 +1,24 @@
+# Generated DOCK calculations
+runs/
+
+# SLURM logs
+logs/
+
+# Generated workflow state
+state/
+
+# Combined molecular datasets
+combined/
+
+# DOCK output files
+*.out
+
+# Temporary files
+*.tmp
+*.swp
+
+# macOS
+.DS_Store
+
+# Standalone De Novo input template
+DN.in
