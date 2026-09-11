@@ -1,10 +1,5 @@
 #!/bin/bash
 
-#SBATCH --partition=long-28core
-#SBATCH --time=48:00:00
-#SBATCH --nodes=1
-#SBATCH --ntasks=28
-#SBATCH --cpus-per-task=1
 #SBATCH --job-name=DN_data
 
 set -uo pipefail
@@ -22,27 +17,26 @@ if [[ -z "${SYSTEM}" ]]; then
     exit 1
 fi
 
-echo "Starting system ${SYSTEM}"
-echo "Node: $(hostname)"
-echo "Available tasks: ${SLURM_NTASKS}"
-echo
 
 mapfile -t TASK_IDS < <(
+
     awk -F '\t' -v SYS="${SYSTEM}" '
+
         NR > 1 && $2 == SYS {
             print $1
         }
+
     ' "${TASK_LIST}"
 )
 
+
 N_TASKS=${#TASK_IDS[@]}
 
-echo "DN calculations for ${SYSTEM}: ${N_TASKS}"
-echo
+MAX_PARALLEL="${SLURM_NTASKS:-${TASKS_PER_NODE}}"
 
-MAX_PARALLEL="${SLURM_NTASKS:-28}"
 RUNNING=0
 FAILURES=0
+
 
 for TASK_ID in "${TASK_IDS[@]}"; do
 
@@ -65,6 +59,7 @@ for TASK_ID in "${TASK_IDS[@]}"; do
 
 done
 
+
 while [[ "${RUNNING}" -gt 0 ]]; do
 
     if ! wait -n; then
@@ -75,7 +70,7 @@ while [[ "${RUNNING}" -gt 0 ]]; do
 
 done
 
-echo
-echo "Finished system ${SYSTEM}"
-echo "Observed failed worker exits: ${FAILURES}"
 
+echo "System: ${SYSTEM}"
+echo "Calculations: ${N_TASKS}"
+echo "Failed worker exits: ${FAILURES}"

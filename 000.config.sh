@@ -1,28 +1,56 @@
 #!/bin/bash
 
 # Central configuration for the multi-system DOCK6.13 De Novo workflow.
+# Configure the required paths before running the workflow.
 
-WORK_ROOT="/gpfs/projects/rizzo/iamanor/Collaborations/Pak/001_voxbirch/001_DN_Data"
+CONFIG_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-SYSTEM_ROOT="/gpfs/projects/rizzo/iamanor/Systems_and_Library_Files/001_Systems_Files/002_DRef_Systems"
+# Working directory
+# Generated workflow files are written relative to this repository.
+WORK_ROOT="${CONFIG_DIR}"
 
-ANCHOR_ROOT="/gpfs/projects/rizzo/iamanor/DOCK6_Development/Dynamics_Referencing/for_isaac/Dynamic_Reference_for_Isaac/anchors"
+# Receptor systems
+# Directory containing the receptor-system directories.
+# Example: SYSTEM_ROOT="/path/to/receptor/systems"
+SYSTEM_ROOT=""
 
-DN_LIBRARY_ROOT="/gpfs/projects/rizzo/iamanor/Systems_and_Library_Files/003_Libraries/DOCK_DN_Generic_Library/DOCK6.13_Library"
+# Anchor fragments
+# Directory containing anchor_*.mol2 files.
+# Example: ANCHOR_ROOT="/path/to/anchor/library"
+ANCHOR_ROOT=""
 
-DOCK_ROOT="/gpfs/projects/AMS536/zzz.programs/dock6.13"
-DOCK_BIN="${DOCK_ROOT}/bin/dock6"
-DOCK_PARAMS="${DOCK_ROOT}/parameters"
+# DOCK6.13 executable
+# Example: DOCK_BIN="/path/to/dock6.13/bin/dock6"
+DOCK_BIN=""
 
-SCAFFOLD_LIBRARY="${DN_LIBRARY_ROOT}/fraglib_scaffold.mol2"
-LINKER_LIBRARY="${DN_LIBRARY_ROOT}/fraglib_linker.mol2"
-SIDECHAIN_LIBRARY="${DN_LIBRARY_ROOT}/fraglib_sidechain.mol2"
-TORENV_TABLE="${DN_LIBRARY_ROOT}/fraglib_torenv.dat"
+# DOCK6.13 De Novo fragment libraries
+# Provide the full path to each required library.
 
-VDW_DEFN_FILE="${DOCK_PARAMS}/vdw_de_novo.defn"
-FLEX_DEFN_FILE="${DOCK_PARAMS}/flex.defn"
-FLEX_DRIVE_FILE="${DOCK_PARAMS}/flex_drive.tbl"
+# Example: SCAFFOLD_LIBRARY="/path/to/fraglib_scaffold.mol2"
+SCAFFOLD_LIBRARY=""
 
+# Example: LINKER_LIBRARY="/path/to/fraglib_linker.mol2"
+LINKER_LIBRARY=""
+
+# Example: SIDECHAIN_LIBRARY="/path/to/fraglib_sidechain.mol2"
+SIDECHAIN_LIBRARY=""
+
+# Example: TORENV_TABLE="/path/to/fraglib_torenv.dat"
+TORENV_TABLE=""
+
+# DOCK6.13 parameter files
+# Provide the full path to each required parameter file.
+
+# Example: VDW_DEFN_FILE="/path/to/vdw_de_novo.defn"
+VDW_DEFN_FILE=""
+
+# Example: FLEX_DEFN_FILE="/path/to/flex.defn"
+FLEX_DEFN_FILE=""
+
+# Example: FLEX_DRIVE_FILE="/path/to/flex_drive.tbl"
+FLEX_DRIVE_FILE=""
+
+# Generated workflow files
 STATE_DIR="${WORK_ROOT}/state"
 RUN_DIR="${WORK_ROOT}/runs"
 LOG_DIR="${WORK_ROOT}/logs"
@@ -33,10 +61,18 @@ ANCHOR_LIST="${STATE_DIR}/anchors.txt"
 TASK_LIST="${STATE_DIR}/tasks.tsv"
 STATUS_FILE="${STATE_DIR}/status.tsv"
 
-# One system occupies one 28-core node.
-# Up to this many systems can run simultaneously.
-PARTITION="long-28core"
-TASKS_PER_NODE=28
-MAX_SYSTEM_JOBS=4
-WALLTIME="48:00:00"
+# SLURM settings
 
+# SLURM partition.
+# Leave blank if an explicit partition is not required.
+# Example: PARTITION="your_partition"
+PARTITION=""
+
+# Number of independent serial DOCK calculations per system job.
+TASKS_PER_NODE=28
+
+# Maximum number of receptor-system jobs running simultaneously.
+MAX_SYSTEM_JOBS=4
+
+# Requested walltime.
+WALLTIME="48:00:00"
