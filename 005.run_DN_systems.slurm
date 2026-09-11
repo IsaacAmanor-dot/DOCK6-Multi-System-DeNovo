@@ -5,7 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=40
 #SBATCH --cpus-per-task=1
-#SBATCH --job-name=
+#SBATCH --job-name=DN_data
 
 set -uo pipefail
 
@@ -17,13 +17,7 @@ ARRAY_ID="${SLURM_ARRAY_TASK_ID:-}"
 
 if [[ -z "${ARRAY_ID}" ]]; then
     echo "ERROR: No SLURM array task ID was detected."
-    echo "This script must be submitted as a SLURM array job."
-    echo
-    echo "Example:"
-    echo "sbatch --array=1-N 005.run_DN_systems.slurm"
-    echo
-    echo "N must equal the number of receptor systems in:"
-    echo "${SYSTEM_LIST}"
+    echo "Submit this script using a SLURM array."
     exit 1
 fi
 
@@ -42,14 +36,22 @@ fi
 SYSTEM=$(sed -n "${ARRAY_ID}p" "${SYSTEM_LIST}")
 
 if [[ -z "${SYSTEM}" ]]; then
-    echo "ERROR: Could not determine a system for array task ${ARRAY_ID}"
+    echo "ERROR: Could not determine system for array task ${ARRAY_ID}"
     exit 1
 fi
 
+SYSTEM_RUN_DIR="${RUN_DIR}/${SYSTEM}"
+SYSTEM_OUT="${SYSTEM_RUN_DIR}/system.out"
+
+mkdir -p "${SYSTEM_RUN_DIR}"
+
+exec > >(tee -a "${SYSTEM_OUT}") 2>&1
+
 echo "Starting system: ${SYSTEM}"
 echo "Array task: ${ARRAY_ID}"
+echo "SLURM job: ${SLURM_JOB_ID}"
 echo "Node: $(hostname)"
-echo "Allocated SLURM tasks: ${SLURM_NTASKS:-1}"
+echo "Allocated tasks: ${SLURM_NTASKS:-1}"
 echo
 
 mapfile -t TASK_IDS < <(
@@ -63,7 +65,7 @@ mapfile -t TASK_IDS < <(
 N_TASKS=${#TASK_IDS[@]}
 
 if [[ "${N_TASKS}" -eq 0 ]]; then
-    echo "ERROR: No DN calculations were found for ${SYSTEM}"
+    echo "ERROR: No DN calculations found for ${SYSTEM}"
     exit 1
 fi
 
@@ -77,16 +79,17 @@ FAILURES=0
 
 for TASK_ID in "${TASK_IDS[@]}"; do
 
+    echo "Launching task ${TASK_ID}"
+
     srun \
         --exclusive \
         -N1 \
         -n1 \
-        bash "${WORKFLOW_DIR}/004.run_one_task.sh" "${TASK_ID}" &
+        bash "${WORKFLOW_DIR}/004.run_one_task.slurm" "${TASK_ID}" &
 
     RUNNING=$((RUNNING + 1))
 
     if [[ "${RUNNING}" -ge "${MAX_PARALLEL}" ]]; then
-
         if ! wait -n; then
             FAILURES=$((FAILURES + 1))
         fi
@@ -97,7 +100,6 @@ for TASK_ID in "${TASK_IDS[@]}"; do
 done
 
 while [[ "${RUNNING}" -gt 0 ]]; do
-
     if ! wait -n; then
         FAILURES=$((FAILURES + 1))
     fi
