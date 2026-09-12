@@ -7,13 +7,13 @@ source "${SCRIPT_DIR}/000.config.sh"
 
 if [[ ! -s "${SYSTEM_LIST}" ]]; then
     echo "Missing ${SYSTEM_LIST}"
-    echo "Run ./001.discover_inputs.sh first."
+    echo "Run 001.discover_inputs.sh first."
     exit 1
 fi
 
 if [[ ! -s "${ANCHOR_LIST}" ]]; then
     echo "Missing ${ANCHOR_LIST}"
-    echo "Run ./001.discover_inputs.sh first."
+    echo "Run 001.discover_inputs.sh first."
     exit 1
 fi
 
@@ -27,18 +27,24 @@ echo "Total DN inputs: $((N_SYSTEMS * N_ANCHORS))"
 echo
 
 while read -r SYSTEM; do
+
     echo "Setting up ${SYSTEM}"
 
     SYSTEM_SOURCE="${SYSTEM_ROOT}/${SYSTEM}"
+
     SPHERE_FILE="${SYSTEM_SOURCE}/${SYSTEM}.rec.clust.close.sph"
     GRID_PREFIX="${SYSTEM_SOURCE}/${SYSTEM}.rec"
+    HMS_REF_FILE="${SYSTEM_SOURCE}/${SYSTEM}.lig.am1bcc.mol2"
+
     SYSTEM_RUN_DIR="${RUN_DIR}/${SYSTEM}"
 
     mkdir -p "${SYSTEM_RUN_DIR}"
 
     while read -r ANCHOR_FILE; do
+
         ANCHOR_NAME="${ANCHOR_FILE%.mol2}"
         ANCHOR_PATH="${ANCHOR_ROOT}/${ANCHOR_FILE}"
+
         CALC_DIR="${SYSTEM_RUN_DIR}/${ANCHOR_NAME}"
 
         mkdir -p "${CALC_DIR}"
@@ -79,7 +85,7 @@ dn_constraint_rot_bon                                     15
 dn_constraint_formal_charge                               2.0
 dn_heur_unmatched_num                                     1
 dn_heur_matched_rmsd                                      2.0
-dn_unique_anchors                                         1
+dn_unique_anchors                                         5
 dn_max_grow_layers                                        9
 dn_max_root_size                                          25
 dn_max_layer_size                                         25
@@ -90,7 +96,7 @@ dn_write_checkpoints                                      no
 dn_write_prune_dump                                       no
 dn_write_orients                                          no
 dn_write_growth_trees                                     no
-dn_output_prefix                                          DOCK_DN
+dn_output_prefix                                          System_DN
 use_internal_energy                                       yes
 internal_energy_rep_exp                                   12
 internal_energy_cutoff                                    100.0
@@ -119,7 +125,7 @@ descriptor_use_grid_score                                 yes
 descriptor_use_grid_lig_efficiency                        no
 descriptor_use_pharmacophore_score                        no
 descriptor_use_tanimoto                                   no
-descriptor_use_hungarian                                  no
+descriptor_use_hungarian                                  yes
 descriptor_use_volume_overlap                             no
 descriptor_use_gist                                       no
 descriptor_use_dock3.5                                    no
@@ -127,7 +133,11 @@ descriptor_grid_score_rep_rad_scale                       1
 descriptor_grid_score_vdw_scale                           1
 descriptor_grid_score_es_scale                            1
 descriptor_grid_score_grid_prefix                         ${GRID_PREFIX}
+descriptor_hms_score_ref_filename                         ${HMS_REF_FILE}
+descriptor_hms_score_matching_coeff                       -1
+descriptor_hms_score_rmsd_coeff                           1
 descriptor_weight_grid_score                              1
+descriptor_weight_hms_score                               1
 minimize_ligand                                           yes
 minimize_anchor                                           yes
 minimize_flexible_growth                                  yes
@@ -156,3 +166,4 @@ done < "${SYSTEM_LIST}"
 
 echo
 echo "DN input generation complete."
+echo "Generated DN inputs: $((N_SYSTEMS * N_ANCHORS))"

@@ -5,12 +5,22 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/000.config.sh"
 
-if [[ ! -s "${SYSTEM_LIST}" || ! -s "${ANCHOR_LIST}" ]]; then
-    echo "System or anchor list is missing."
+if [[ ! -s "${SYSTEM_LIST}" ]]; then
+    echo "Missing ${SYSTEM_LIST}"
+    echo "Run 001.discover_inputs.sh first."
     exit 1
 fi
 
-printf "task_id\tsystem\tanchor\tanchor_file\tcalculation_directory\n" > "${TASK_LIST}"
+if [[ ! -s "${ANCHOR_LIST}" ]]; then
+    echo "Missing ${ANCHOR_LIST}"
+    echo "Run 001.discover_inputs.sh first."
+    exit 1
+fi
+
+mkdir -p "${STATE_DIR}"
+
+printf "task_id\tsystem\tanchor\tanchor_file\tcalculation_directory\n" \
+    > "${TASK_LIST}"
 
 TASK_ID=0
 
@@ -24,8 +34,15 @@ while read -r SYSTEM; do
         ANCHOR_PATH="${ANCHOR_ROOT}/${ANCHOR_FILE}"
         CALC_DIR="${RUN_DIR}/${SYSTEM}/${ANCHOR_NAME}"
 
+        if [[ ! -d "${CALC_DIR}" ]]; then
+            echo "Missing calculation directory:"
+            echo "${CALC_DIR}"
+            exit 1
+        fi
+
         if [[ ! -s "${CALC_DIR}/DN.in" ]]; then
-            echo "Missing DN.in for ${SYSTEM} ${ANCHOR_FILE}"
+            echo "Missing DN.in:"
+            echo "${CALC_DIR}/DN.in"
             exit 1
         fi
 
@@ -43,4 +60,3 @@ done < "${SYSTEM_LIST}"
 
 echo "Created ${TASK_LIST}"
 echo "Total tasks: ${TASK_ID}"
-

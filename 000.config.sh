@@ -10,7 +10,7 @@ WORK_ROOT="${CONFIG_DIR}"
 
 # Receptor systems
 
-# Directory containing the receptor-system directories.
+# Directory containing one directory per receptor system.
 # Example:
 # SYSTEM_ROOT="/path/to/receptor/systems"
 
@@ -26,8 +26,7 @@ ANCHOR_ROOT=""
 
 # DOCK6.13 installation
 
-# Top-level DOCK6.13 installation directory.
-# This directory should contain bin/ and parameters/.
+# Top-level DOCK6.13 directory containing bin/ and parameters/.
 # Example:
 # DOCK_ROOT="/path/to/dock6.13"
 
@@ -47,7 +46,7 @@ FLEX_DRIVE_FILE="${DOCK_PARAMS}/flex_drive.tbl"
 # fraglib_linker.mol2
 # fraglib_sidechain.mol2
 # fraglib_torenv.dat
-
+#
 # Example:
 # DN_LIBRARY_ROOT="/path/to/DOCK6.13_Library"
 

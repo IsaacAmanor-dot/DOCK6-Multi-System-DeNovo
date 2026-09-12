@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --partition=
+#SBATCH --partition=YOUR_PARTITION
 #SBATCH --time=60:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -10,13 +10,24 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
 source "${SCRIPT_DIR}/000.config.sh"
 
 TASK_ID="${1:-}"
 
 if [[ -z "${TASK_ID}" ]]; then
     echo "Usage: sbatch 004.run_one_task.slurm TASK_ID"
+    exit 1
+fi
+
+if [[ ! -s "${TASK_LIST}" ]]; then
+    echo "Missing task list:"
+    echo "${TASK_LIST}"
+    exit 1
+fi
+
+if [[ ! -x "${DOCK_BIN}" ]]; then
+    echo "DOCK executable not found or not executable:"
+    echo "${DOCK_BIN}"
     exit 1
 fi
 
@@ -32,11 +43,12 @@ if [[ -z "${TASK_LINE}" ]]; then
     exit 1
 fi
 
-IFS=$'\t' read -r TASK_ID SYSTEM ANCHOR ANCHOR_FILE CALC_DIR <<< "${TASK_LINE}"
+IFS=$'\t' read -r TASK_ID SYSTEM ANCHOR ANCHOR_FILE CALC_DIR \
+    <<< "${TASK_LINE}"
 
 INPUT_FILE="${CALC_DIR}/DN.in"
 OUTPUT_FILE="${CALC_DIR}/DN.out"
-MOL2_FILE="${CALC_DIR}/DOCK_DN.denovo_build.mol2"
+MOL2_FILE="${CALC_DIR}/System_DN.denovo_build.mol2"
 
 if [[ ! -d "${CALC_DIR}" ]]; then
     echo "Calculation directory does not exist:"
@@ -45,17 +57,21 @@ if [[ ! -d "${CALC_DIR}" ]]; then
 fi
 
 if [[ ! -s "${INPUT_FILE}" ]]; then
-    echo "Missing input file:"
+    echo "Missing DN input:"
     echo "${INPUT_FILE}"
     exit 1
 fi
 
 cd "${CALC_DIR}" || exit 1
 
-if [[ -s "${MOL2_FILE}" ]] && grep -q '^@<TRIPOS>MOLECULE' "${MOL2_FILE}"; then
+if [[ -s "${MOL2_FILE}" ]] \
+    && grep -q '^@<TRIPOS>MOLECULE' "${MOL2_FILE}"; then
+
     echo "Task ${TASK_ID}: ${SYSTEM} ${ANCHOR} already completed."
+
     touch .success
     rm -f .failed
+
     exit 0
 fi
 
@@ -65,6 +81,7 @@ echo "Task: ${TASK_ID}"
 echo "System: ${SYSTEM}"
 echo "Anchor: ${ANCHOR}"
 echo "Node: $(hostname)"
+echo "Directory: ${CALC_DIR}"
 echo "Input: ${INPUT_FILE}"
 echo "Output: ${OUTPUT_FILE}"
 echo

@@ -1,23 +1,21 @@
 #!/bin/bash
-
-#SBATCH --partition=
-#SBATCH --time=60:00:00
+#SBATCH --partition=rn-long-40core
+#SBATCH --time=120:00:00
 #SBATCH --nodes=1
-#SBATCH --ntasks=40
-#SBATCH --cpus-per-task=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=5
 #SBATCH --job-name=DN_data
 
 set -uo pipefail
 
-WORKFLOW_DIR="${WORKFLOW_DIR:-${SLURM_SUBMIT_DIR}}"
-
+WORKFLOW_DIR="${WORKFLOW_DIR:-${SLURM_SUBMIT_DIR:-$(pwd)}}"
 source "${WORKFLOW_DIR}/000.config.sh"
 
 ARRAY_ID="${SLURM_ARRAY_TASK_ID:-}"
 
 if [[ -z "${ARRAY_ID}" ]]; then
     echo "ERROR: No SLURM array task ID was detected."
-    echo "Submit this script using a SLURM array."
+    echo "Submit this script as a SLURM array job."
     exit 1
 fi
 
@@ -45,13 +43,15 @@ SYSTEM_OUT="${SYSTEM_RUN_DIR}/system.out"
 
 mkdir -p "${SYSTEM_RUN_DIR}"
 
+: > "${SYSTEM_OUT}"
+
 exec > >(tee -a "${SYSTEM_OUT}") 2>&1
 
 echo "Starting system: ${SYSTEM}"
 echo "Array task: ${ARRAY_ID}"
-echo "SLURM job: ${SLURM_JOB_ID}"
+echo "SLURM job: ${SLURM_JOB_ID:-unknown}"
 echo "Node: $(hostname)"
-echo "Allocated tasks: ${SLURM_NTASKS:-1}"
+echo "CPUs allocated: ${SLURM_CPUS_PER_TASK:-1}"
 echo
 
 mapfile -t TASK_IDS < <(
@@ -69,45 +69,46 @@ if [[ "${N_TASKS}" -eq 0 ]]; then
     exit 1
 fi
 
-echo "DN calculations for ${SYSTEM}: ${N_TASKS}"
+echo "Anchor calculations for ${SYSTEM}: ${N_TASKS}"
 echo
 
-MAX_PARALLEL="${SLURM_NTASKS:-1}"
-
-RUNNING=0
-FAILURES=0
+PIDS=()
+ACTIVE_TASKS=()
 
 for TASK_ID in "${TASK_IDS[@]}"; do
-
     echo "Launching task ${TASK_ID}"
 
-    srun \
-        --exclusive \
-        -N1 \
-        -n1 \
-        bash "${WORKFLOW_DIR}/004.run_one_task.slurm" "${TASK_ID}" &
+    bash "${WORKFLOW_DIR}/004.run_one_task.slurm" "${TASK_ID}" &
 
-    RUNNING=$((RUNNING + 1))
-
-    if [[ "${RUNNING}" -ge "${MAX_PARALLEL}" ]]; then
-        if ! wait -n; then
-            FAILURES=$((FAILURES + 1))
-        fi
-
-        RUNNING=$((RUNNING - 1))
-    fi
-
+    PIDS+=("$!")
+    ACTIVE_TASKS+=("${TASK_ID}")
 done
 
-while [[ "${RUNNING}" -gt 0 ]]; do
-    if ! wait -n; then
+echo
+echo "All ${N_TASKS} anchor calculations launched concurrently."
+echo
+
+FAILURES=0
+
+for I in "${!PIDS[@]}"; do
+    PID="${PIDS[$I]}"
+    TASK_ID="${ACTIVE_TASKS[$I]}"
+
+    if wait "${PID}"; then
+        echo "Task ${TASK_ID} completed successfully."
+    else
+        echo "Task ${TASK_ID} failed."
         FAILURES=$((FAILURES + 1))
     fi
-
-    RUNNING=$((RUNNING - 1))
 done
 
 echo
 echo "Finished system: ${SYSTEM}"
-echo "DN calculations: ${N_TASKS}"
-echo "Failed worker exits: ${FAILURES}"
+echo "Anchor calculations: ${N_TASKS}"
+echo "Failed calculations: ${FAILURES}"
+
+if [[ "${FAILURES}" -gt 0 ]]; then
+    exit 1
+fi
+
+exit 0

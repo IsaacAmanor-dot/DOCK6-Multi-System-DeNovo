@@ -17,7 +17,8 @@ MANIFEST="${COMBINED_DIR}/All_DN_Generated_manifest.tsv"
 
 : > "${COMBINED_MOL2}"
 
-printf "system\tanchor\tmolecules\tfirst_index\tlast_index\tsource_file\n" > "${MANIFEST}"
+printf "system\tanchor\tmolecules\tfirst_index\tlast_index\tsource_file\n" \
+    > "${MANIFEST}"
 
 CURRENT_INDEX=0
 SUCCESSFUL_FILES=0
@@ -25,7 +26,7 @@ TOTAL_MOLECULES=0
 
 while IFS=$'\t' read -r TASK_ID SYSTEM ANCHOR ANCHOR_FILE CALC_DIR; do
 
-    MOL2="${CALC_DIR}/DOCK_DN.denovo_build.mol2"
+    MOL2="${CALC_DIR}/System_DN.denovo_build.mol2"
 
     if [[ ! -s "${MOL2}" ]]; then
         continue
@@ -61,11 +62,10 @@ echo
 echo "Concatenation complete."
 echo
 echo "Successful DN outputs: ${SUCCESSFUL_FILES}"
-echo "Total molecules:       ${TOTAL_MOLECULES}"
+echo "Total molecules: ${TOTAL_MOLECULES}"
 echo
 echo "Combined MOL2:"
 echo "${COMBINED_MOL2}"
 echo
 echo "Provenance manifest:"
 echo "${MANIFEST}"
-
